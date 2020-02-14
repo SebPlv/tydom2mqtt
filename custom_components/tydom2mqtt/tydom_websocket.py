@@ -17,8 +17,8 @@ from datetime import datetime
 import subprocess, platform
 
 
-from cover import Cover
-from alarm_control_panel import Alarm
+from .cover import Cover
+from .alarm_control_panel import Alarm
 
 
 # Thanks https://stackoverflow.com/questions/49878953/issues-listening-incoming-messages-in-websocket-client-on-python-3-6
