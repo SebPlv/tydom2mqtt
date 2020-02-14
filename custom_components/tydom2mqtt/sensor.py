@@ -77,6 +77,7 @@ class Tydom2MQTT(Entity):
     def __init__(self, tydom, loop):
         """Initialize the sensor."""
         print('Start websocket listener and heartbeat')
+
         self._state = None
         tasks = [                                                             
           tydom.receiveMessage(),                                             
