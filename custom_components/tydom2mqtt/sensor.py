@@ -14,7 +14,6 @@ import time
 from datetime import datetime
 import os
 import sys
-import sdnotify
 
 
 from mqtt_client import MQTT_Hassio
@@ -49,8 +48,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
-   loop = asyncio.get_event_loop() 
-    
+    loop = asyncio.get_event_loop() 
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     logging.info("[tydom2mqtt] start")
     """Setup the sensor platform."""
