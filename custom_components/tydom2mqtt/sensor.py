@@ -68,7 +68,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     loop.run_until_complete(tydom.connect())
     # Giving back tydom client to MQTT client
     hassio.tydom = tydom
-    add_devices([PrixCarburant(tydom,loop)])
+    add_devices([Tydom2MQTT(tydom,loop)])
 
 
 class Tydom2MQTT(Entity):
