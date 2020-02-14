@@ -74,7 +74,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class Tydom2MQTT(Entity):
     """Representation of a Sensor."""
 
-    def __init__(self, loopt):
+    def __init__(self, tydom, loop):
         """Initialize the sensor."""
         print('Start websocket listener and heartbeat')
         self._state = None
