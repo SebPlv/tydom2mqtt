@@ -15,7 +15,6 @@ from http.server import BaseHTTPRequestHandler
 import ssl
 from datetime import datetime
 import subprocess, platform
-import sdnotify
 
 
 from cover import Cover
@@ -143,8 +142,6 @@ class TydomWebSocketClient():
             # async with websockets.client.connect('wss://{}:443/mediation/client?mac={}&appli=1'.format(self.host, self.mac),
             #                             extra_headers=websocketHeaders, ssl=websocket_ssl_context) as self.connection:
             await self.notify_alive()
-            # n = sdnotify.SystemdNotifier()
-            # n.notify("WATCHDOG=1")
 
             while True:
                 print('\o/ \o/ \o/ \o/ \o/ \o/ \o/ \o/ \o/ ')
@@ -262,8 +259,6 @@ class TydomWebSocketClient():
             first = str(bytes_str[:40]) # Scanning 1st characters
             #Notify systemd watchdog
             await self.notify_alive()
-            # n = sdnotify.SystemdNotifier()
-            # n.notify("WATCHDOG=1")
 
 
             try:
@@ -622,9 +617,6 @@ class TydomWebSocketClient():
 
     async def notify_alive(self, msg='OK'):
         statestr = msg #+' : '+str(datetime.fromtimestamp(time.time()))
-        #Notify systemd watchdog
-        n = sdnotify.SystemdNotifier()
-        n.notify("WATCHDOG=1")
         print("Tydom HUB is still connected, systemd's watchdog notified...")
 
         # await self.POST_Hassio(sensorname='last_ping', state=statestr, friendlyname='Tydom Connection')

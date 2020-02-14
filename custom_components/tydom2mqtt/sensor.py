@@ -16,8 +16,8 @@ import os
 import sys
 
 
-from mqtt_client import MQTT_Hassio
-from tydom_websocket import TydomWebSocketClient
+from .mqtt_client import MQTT_Hassio
+from .tydom_websocket import TydomWebSocketClient
 
 import socket
 #main import#
