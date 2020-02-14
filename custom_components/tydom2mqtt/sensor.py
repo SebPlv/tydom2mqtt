@@ -48,7 +48,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
-    loop = asyncio.get_event_loop() 
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     logging.info("[tydom2mqtt] start")
     """Setup the sensor platform."""
@@ -58,7 +59,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     mqttIP = config.get(CONF_MQTT_IP)
     mqttPort = config.get(CONF_MQTT_PORT)
     # Creating client object
-    hassio = MQTT_Hassio(mqttIP, mqttPort, "", "", false)
+    hassio = MQTT_Hassio(mqttIP, mqttPort, "", "", False)
     # hassio_connection = loop.run_until_complete(hassio.connect())
     # Giving MQTT connection to tydom class for updating
     tydom = TydomWebSocketClient(mac=tydomMAC, host=tydomIP, password=tydomPassword, mqtt_client=hassio)
