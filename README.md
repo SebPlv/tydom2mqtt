@@ -34,3 +34,21 @@ The plugin is :
  
  TODO : 
   - handle errors
+
+
+BONUS : 
+Mosquitto installation ( mqtt broker) : 
+```
+    mosquitto:
+        container_name: mqtt
+        volumes:
+            - '/home/docker/mqtt/config:/mqtt/config:ro'
+            - '/home/docker/mqtt/log:/mqtt/log'
+            - '/home/docker/mqtt/data/:/mqtt/data/'
+        ports:
+            - '1883:1883'
+        image: toke/mosquitto
+        networks:
+          static-network:
+            ipv4_address:  172.18.1.18
+```
