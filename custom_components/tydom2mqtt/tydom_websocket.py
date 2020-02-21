@@ -39,11 +39,10 @@ climateKeywords = ['temperature', 'authorization', 'hvacMode', 'setpoint']
 class TydomWebSocketClient():
 
     def __init__(self, mac, password, host='mediation.tydom.com', mqtt_client=None):
-        logger = logging.getLogger("TYDOM2MQTTAPI")
-        logger.debug((('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
-        logger.debug((('Initialising TydomClient Class')
+        self.logger = logging.getLogger("TYDOM2MQTTAPI")
+        self.logger.debug('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
+        self.logger.debug('Initialising TydomClient Class')
 
-        self.logger=logger
         self.password = password
         self.mac = mac
         self.host = host
@@ -54,54 +53,54 @@ class TydomWebSocketClient():
         self.cmd_prefix = "\x02"
 
     async def connect(self):
-        self.logger.debug((('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
-        self.logger.debug((('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
-        self.logger.debug((('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
-        self.logger.debug((('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
-        self.logger.debug((('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
-        self.logger.debug((('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
-        self.logger.debug((('TYDOM WEBSOCKET CONNECTION INITIALISING....                     ')
+        self.logger.debug('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
+        self.logger.debug('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
+        self.logger.debug('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
+        self.logger.debug('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
+        self.logger.debug('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
+        self.logger.debug('""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""')
+        self.logger.debug('TYDOM WEBSOCKET CONNECTION INITIALISING....                     ')
 
 
         if not (self.host == 'mediation.tydom.com'):
             test = None
             testlocal = None
             try:
-                self.logger.debug((('Testing if local Tydom hub IP is reachable....')
+                self.logger.debug('Testing if local Tydom hub IP is reachable....')
                 testlocal = subprocess.check_output("ping -{} 1 {}".format('n' if platform.system().lower()=="windows" else 'c', self.host), shell=True)
             except Exception as e:
-                self.logger.error((('Local control is down, will try to fallback to remote....')
+                self.logger.error('Local control is down, will try to fallback to remote....')
 
             try:
                 # raise Exception ## Uncomment to pure lcoal IP mode
-                self.logger.debug((('Testing if mediation.tydom.com is reacheable...')
+                self.logger.debug('Testing if mediation.tydom.com is reacheable...')
                 test = subprocess.check_output("ping -{} 1 {}".format('n' if platform.system().lower()=="windows" else 'c', 'mediation.tydom.com'), shell=True)
-                self.logger.debug((('mediation.tydom.com is reacheable ! Using it to prevent code 1006 deconnections from local ip for now.')
+                self.logger.debug('mediation.tydom.com is reacheable ! Using it to prevent code 1006 deconnections from local ip for now.')
                 self.host = 'mediation.tydom.com'
             except Exception as e:
 
-                self.logger.error((('Remote control is down !')
+                self.logger.error('Remote control is down !')
 
                 if (testlocal == None) :
-                    self.logger.error((("Exiting to ensure systemd restart....")
+                    self.logger.error("Exiting to ensure systemd restart....")
                     sys.exit()
                 else:
-                    self.logger.error((('Fallback to local ip for that connection, except code 1006 deconnections every 60 seconds...')
+                    self.logger.error('Fallback to local ip for that connection, except code 1006 deconnections every 60 seconds...')
 
            
         # Set Host, ssl context and prefix for remote or local connection
         if self.host == "mediation.tydom.com":
-            self.logger.debug((('Setting remote mode context.')
+            self.logger.debug('Setting remote mode context.')
             self.remote_mode = True
             self.ssl_context = None
             self.cmd_prefix = "\x02"
         else:
-            self.logger.debug((('Setting local mode context.')
+            self.logger.debug('Setting local mode context.')
             self.remote_mode = False
             self.ssl_context = ssl._create_unverified_context()
             self.cmd_prefix = ""
 
-        self.logger.debug((('Building headers, getting 1st handshake and authentication....')
+        self.logger.debug('Building headers, getting 1st handshake and authentication....')
         '''
             Connecting to webSocket server
             websockets.client.connect returns a WebSocketClientProtocol, which is used to send and receive messages
@@ -123,7 +122,7 @@ class TydomWebSocketClient():
         res.read()
         # Close HTTPS Connection
         conn.close()
-        self.logger.debug((('Upgrading http connection to websocket....')
+        self.logger.debug('Upgrading http connection to websocket....')
         # Build websocket headers
         websocketHeaders = {'Authorization': self.build_digest_headers(nonce)}
         if self.ssl_context is not None:
@@ -133,9 +132,9 @@ class TydomWebSocketClient():
 
 
         try:
-            self.logger.debug((('Attempting websocket connection with tydom hub.......................')
-            self.logger.debug((('Host Target :')
-            self.logger.debug(((self.host)
+            self.logger.debug('Attempting websocket connection with tydom hub.......................')
+            self.logger.debug('Host Target :')
+            self.logger.debug(self.host)
             
             self.connection = await websockets.client.connect('wss://{}:443/mediation/client?mac={}&appli=1'.format(self.host, self.mac),
                                                     extra_headers=websocketHeaders, ssl=websocket_ssl_context)
@@ -145,16 +144,16 @@ class TydomWebSocketClient():
             await self.notify_alive()
 
             while True:
-                self.logger.debug((('\o/ \o/ \o/ \o/ \o/ \o/ \o/ \o/ \o/ ')
-                self.logger.debug((("Tydom Websocket is Connected !", self.connection)
+                self.logger.debug('\o/ \o/ \o/ \o/ \o/ \o/ \o/ \o/ \o/ ')
+                self.logger.debug("Tydom Websocket is Connected !", self.connection)
                 return self.connection
 
         except Exception as e:
-            self.logger.error((('Websocket def connect error')
-            self.logger.error(((e)
-            self.logger.error((('Exiting to ensure systemd restart....')
+            self.logger.error('Websocket def connect error')
+            self.logger.error(e)
+            self.logger.error('Exiting to ensure systemd restart....')
             sys.exit() #Exit all to ensure systemd restart
-            # self.logger.debug((('Reconnecting...')
+            # self.logger.debug('Reconnecting...')
             # asyncio.sleep(8)
             # await self.connect()
 
@@ -163,67 +162,67 @@ class TydomWebSocketClient():
         Sending heartbeat to server
         Ping - pong messages to verify connection is alive
         '''
-        self.logger.debug((('Requesting 1st data...')
+        self.logger.debug('Requesting 1st data...')
 
         await self.get_info()
-        self.logger.debug((("##################################")
-        self.logger.debug((("##################################")
+        self.logger.debug("##################################")
+        self.logger.debug("##################################")
         await self.post_refresh()
         await self.get_data()
         while self.connection.open:
             try:
                 # await self.connection.send('ping')
                 # await get_ping(self)
-                # self.logger.debug((('****** ping !')
+                # self.logger.debug('****** ping !')
                 await self.post_refresh()
                 await asyncio.sleep(40)
 
 
             except Exception as e:
-                self.logger.error((("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                self.logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
-                self.logger.error((('Heartbeat error')
-                self.logger.error((('Connection with server closed')
-                self.logger.error(((e)
-                self.logger.error((('Exiting to ensure systemd restart....')
+                self.logger.error('Heartbeat error')
+                self.logger.error('Connection with server closed')
+                self.logger.error(e)
+                self.logger.error('Exiting to ensure systemd restart....')
                 sys.exit() #Exit all to ensure systemd restart
-                # self.logger.debug((('Reconnecting...')
+                # self.logger.debug('Reconnecting...')
                 # await self.connect()
 
 # Send Generic GET message
     async def send_message(self, websocket, msg):
         if not self.connection.open:
-            self.logger.error((('Exiting to ensure systemd restart....')
+            self.logger.error('Exiting to ensure systemd restart....')
             sys.exit() #Exit all to ensure systemd restart
-            # self.logger.debug((('Websocket not opened, reconnect...')
+            # self.logger.debug('Websocket not opened, reconnect...')
             # await self.connect()
    
         str = self.cmd_prefix + "GET " + msg +" HTTP/1.1\r\nContent-Length: 0\r\nContent-Type: application/json; charset=UTF-8\r\nTransac-Id: 0\r\n\r\n"
         a_bytes = bytes(str, "ascii")
         await websocket.send(a_bytes)
-        self.logger.debug((('GET Command send to websocket')
+        self.logger.debug('GET Command send to websocket')
         return 0
 
 # Send Generic POST message
     async def send_post_message(self, websocket, msg):
         if not self.connection.open:
-            self.logger.error((('Exiting to ensure systemd restart....')
+            self.logger.error('Exiting to ensure systemd restart....')
             sys.exit() #Exit all to ensure systemd restart
-            # self.logger.debug((('Websocket not opened, reconnect...')
+            # self.logger.debug('Websocket not opened, reconnect...')
             # await self.connect()
 
         str = self.cmd_prefix + "POST " + msg +" HTTP/1.1\r\nContent-Length: 0\r\nContent-Type: application/json; charset=UTF-8\r\nTransac-Id: 0\r\n\r\n"
         a_bytes = bytes(str, "ascii")
         await websocket.send(a_bytes)
-        # self.logger.debug((('POST Command send to websocket')
+        # self.logger.debug('POST Command send to websocket')
         return 0
 
     # Give order (name + value) to endpoint
     async def put_devices_data(self, endpoint_id, name, value):
         if not self.connection.open:
-            self.logger.error((('Exiting to ensure systemd restart....')
+            self.logger.error('Exiting to ensure systemd restart....')
             sys.exit() #Exit all to ensure systemd restart
-            # self.logger.debug((('Websocket not opened, reconnect...')
+            # self.logger.debug('Websocket not opened, reconnect...')
             # await self.connect()
 
         # For shutter, value is the percentage of closing
@@ -232,7 +231,7 @@ class TydomWebSocketClient():
         str_request = self.cmd_prefix + "PUT /devices/{}/endpoints/{}/data HTTP/1.1\r\nContent-Length: ".format(str(endpoint_id),str(endpoint_id))+str(len(body))+"\r\nContent-Type: application/json; charset=UTF-8\r\nTransac-Id: 0\r\n\r\n"+body+"\r\n\r\n"
         a_bytes = bytes(str_request, "ascii")
         await self.connection.send(a_bytes)
-        self.logger.debug((('PUT request send to Websocket !')
+        self.logger.debug('PUT request send to Websocket !')
         return 0
 
     # Run scenario
@@ -255,8 +254,8 @@ class TydomWebSocketClient():
         while True:
 
             bytes_str = await self.connection.recv()
-            # self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-            # self.logger.debug(((bytes_str)
+            # self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            # self.logger.debug(bytes_str)
             first = str(bytes_str[:40]) # Scanning 1st characters
             #Notify systemd watchdog
             await self.notify_alive()
@@ -264,93 +263,93 @@ class TydomWebSocketClient():
 
             try:
                 if ("refresh" in first):
-                    self.logger.debug((('OK refresh message detected !')
+                    self.logger.debug('OK refresh message detected !')
                     try:
                         pass
                         #ish('homeassistant/sensor/tydom/last_update', str(datetime.fromtimestamp(time.time())), qos=1, retain=True)
                     except:
-                        self.logger.error(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                        self.logger.error((('RAW INCOMING :')
-                        self.logger.error(((bytes_str)
-                        self.logger.error((('END RAW')
-                        self.logger.error(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        self.logger.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        self.logger.error('RAW INCOMING :')
+                        self.logger.error(bytes_str)
+                        self.logger.error('END RAW')
+                        self.logger.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 elif ("PUT /devices/data" in first):
-                    self.logger.debug((('PUT /devices/data message detected !')
+                    self.logger.debug('PUT /devices/data message detected !')
                     try:
                         incoming = self.parse_put_response(bytes_str)
-                        # self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        # self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                         await self.parse_response(incoming)
-                        # self.logger.debug((('PUT message processed !')
-                        # self.logger.debug((("##################################")
+                        # self.logger.debug('PUT message processed !')
+                        # self.logger.debug("##################################")
                         #ish('homeassistant/sensor/tydom/last_update', str(datetime.fromtimestamp(time.time())), qos=1, retain=True)
                     except:
-                        self.logger.error(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                        self.logger.error((('RAW INCOMING :')
-                        self.logger.error(((bytes_str)
-                        self.logger.error((('END RAW')
-                        self.logger.error(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        self.logger.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        self.logger.error('RAW INCOMING :')
+                        self.logger.error(bytes_str)
+                        self.logger.error('END RAW')
+                        self.logger.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 elif ("scn" in first):
                     try:
-                        # self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        # self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                         incoming = get(bytes_str)
                         await self.parse_response(incoming)
-                        self.logger.debug((('Scenarii message processed !')
-                        self.logger.debug((("##################################")
+                        self.logger.debug('Scenarii message processed !')
+                        self.logger.debug("##################################")
                     except:
-                        self.logger.error(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                        self.logger.error((('RAW INCOMING :')
-                        self.logger.error(((bytes_str)
-                        self.logger.error((('END RAW')
-                        self.logger.error(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")            
+                        self.logger.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        self.logger.error('RAW INCOMING :')
+                        self.logger.error(bytes_str)
+                        self.logger.error('END RAW')
+                        self.logger.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")            
                 elif ("POST" in first):
                     try:
-                        # self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        # self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                         incoming = self.parse_put_response(bytes_str)
                         await self.parse_response(incoming)
-                        self.logger.debug((('POST message processed !')
-                        # self.logger.debug((("##################################")
+                        self.logger.debug('POST message processed !')
+                        # self.logger.debug("##################################")
                     except:
-                        self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                        self.logger.debug((('RAW INCOMING :')
-                        self.logger.debug(((bytes_str)
-                        self.logger.debug((('END RAW')
-                        self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        self.logger.debug('RAW INCOMING :')
+                        self.logger.debug(bytes_str)
+                        self.logger.debug('END RAW')
+                        self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 elif ("HTTP/1.1" in first): #(bytes_str != 0) and 
                     response = self.response_from_bytes(bytes_str[len(self.cmd_prefix):])
                     incoming = response.data.decode("utf-8")
-                    # self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                    # self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                    # self.logger.debug(((incoming)
-                    # self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                    # self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                    # self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                    # self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                    # self.logger.debug(incoming)
+                    # self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                    # self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                     try:
-                        # self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        # self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                         await self.parse_response(incoming)
-                        # self.logger.debug((('Pong !')
-                        # self.logger.debug((("##################################")
+                        # self.logger.debug('Pong !')
+                        # self.logger.debug("##################################")
                     except:
-                        self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                        self.logger.debug((('RAW INCOMING :')
-                        self.logger.debug(((bytes_str)
-                        self.logger.debug((('END RAW')
-                        self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                        self.logger.debug('RAW INCOMING :')
+                        self.logger.debug(bytes_str)
+                        self.logger.debug('END RAW')
+                        self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
                         # await parse_put_response(incoming)
                 else:
-                    self.logger.debug((("Didn't detect incoming type, here it is :")
-                    self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                    self.logger.debug((('RAW INCOMING :')
-                    self.logger.debug(((bytes_str)
-                    self.logger.debug((('END RAW')
-                    self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                    self.logger.debug("Didn't detect incoming type, here it is :")
+                    self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                    self.logger.debug('RAW INCOMING :')
+                    self.logger.debug(bytes_str)
+                    self.logger.debug('END RAW')
+                    self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 
             except Exception as e:
-                self.logger.debug((("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                self.logger.debug((('receiveMessage error')
-                self.logger.debug(((e)
-                self.logger.debug((('Exiting to ensure systemd restart....')
+                self.logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                self.logger.debug('receiveMessage error')
+                self.logger.debug(e)
+                self.logger.debug('Exiting to ensure systemd restart....')
                 sys.exit() #Exit all to ensure systemd restart
-                # self.logger.debug(((bytes_str)
-                # self.logger.debug((('Reconnecting in 8s')
+                # self.logger.debug(bytes_str)
+                # self.logger.debug('Reconnecting in 8s')
                 # await asyncio.sleep(8)
                 # await self.connect()
 
@@ -367,42 +366,42 @@ class TydomWebSocketClient():
         # Detect type of incoming data
         if (data != ''):
             if ("id" in first):
-                self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                self.logger.debug((('Incoming message type : data detected')
+                self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                self.logger.debug('Incoming message type : data detected')
                 msg_type = 'msg_data'
             elif ("date" in first):
-                self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                self.logger.debug((('Incoming message type : config detected')
+                self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                self.logger.debug('Incoming message type : config detected')
                 msg_type = 'msg_config'
             elif ("doctype" in first):
-                self.logger.debug((('Incoming message type : html detected (probable 404)')
+                self.logger.debug('Incoming message type : html detected (probable 404)')
                 msg_type = 'msg_html'
-                self.logger.debug(((data)
+                self.logger.debug(data)
             elif ("productName" in first):
-                self.logger.debug(((">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                self.logger.debug((('Incoming message type : Info detected')
+                self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                self.logger.debug('Incoming message type : Info detected')
                 msg_type = 'msg_info'
-                # self.logger.debug(((data)        
+                # self.logger.debug(data)        
             else:
-                self.logger.debug((("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                self.logger.debug((('Incoming message type : no type detected')
-                self.logger.debug(((first)
+                self.logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                self.logger.debug('Incoming message type : no type detected')
+                self.logger.debug(first)
 
             if not (msg_type == None):
                 try:
                     parsed = json.loads(data)
-                    # self.logger.debug(((parsed)
+                    # self.logger.debug(parsed)
                     if (msg_type == 'msg_config'):
                         for i in parsed["endpoints"]:
                             # Get list of shutter
                             if i["last_usage"] == 'shutter':
-                                # self.logger.debug((('{} {}'.format(i["id_endpoint"],i["name"]))
+                                # self.logger.debug('{} {}'.format(i["id_endpoint"],i["name"]))
                                 device_dict[i["id_endpoint"]] = i["name"]
                                 # TODO get other device type
                             if i["last_usage"] == 'alarm':
-                                # self.logger.debug((('{} {}'.format(i["id_endpoint"], i["name"]))
+                                # self.logger.debug('{} {}'.format(i["id_endpoint"], i["name"]))
                                 device_dict[i["id_endpoint"]] = "Tyxal Alarm"
-                        self.logger.debug((('Configuration updated')
+                        self.logger.debug('Configuration updated')
                         
                     elif (msg_type == 'msg_data'):
                         for i in parsed:
@@ -423,7 +422,7 @@ class TydomWebSocketClient():
                                             print_id = name_of_id
                                         else:
                                             print_id = endpoint_id
-                                        # self.logger.debug((('{} : {}'.format(print_id, elementValue))
+                                        # self.logger.debug('{} : {}'.format(print_id, elementValue))
                                         new_cover = "cover_tydom_"+str(endpoint_id)
                                         new_cover = Cover(id=endpoint_id,name=print_id, current_position=elementValue, attributes=i, mqtt=self.mqtt_client)
                                         new_cover.update()
@@ -431,7 +430,7 @@ class TydomWebSocketClient():
                                     # Get last known state (for alarm)
                                     if elementName in deviceAlarmKeywords:
                                         alarm_data = '{} : {}'.format(elementName, elementValue)
-                                        # self.logger.debug(((alarm_data)
+                                        # self.logger.debug(alarm_data)
                                         # alarmMode  : ON or ZONE or OFF
                                         # alarmState : ON = Triggered
                                         # alarmSOS   : true = SOS triggered
@@ -452,32 +451,32 @@ class TydomWebSocketClient():
                                         else:
                                             attr[elementName] = [elementValue]
                                         #     attr[alarm_data]
-                                            # self.logger.debug(((attr)
+                                            # self.logger.debug(attr)
                                         #device_dict[i["id_endpoint"]] = i["name"]
                                         if (sos_state == True):
-                                            self.logger.debug((("SOS !")
+                                            self.logger.debug("SOS !")
                                         if not (state == None):
-                                            # self.logger.debug(((state)
+                                            # self.logger.debug(state)
                                             alarm = "alarm_tydom_"+str(endpoint_id)
-                                            # self.logger.debug((("Alarm created / updated : "+alarm)
+                                            # self.logger.debug("Alarm created / updated : "+alarm)
                                             alarm = Alarm(id=endpoint_id,name="Tyxal Alarm", current_state=state, attributes=attr, sos=str(sos_state), mqtt=self.mqtt_client)
                                             alarm.update()
                     elif (msg_type == 'msg_html'):
-                        self.logger.debug((("HTML Response ?")
+                        self.logger.debug("HTML Response ?")
                     elif (msg_type == 'msg_info'):
                         pass
                     else:
                         # Default json dump
-                        self.logger.debug((()
-                        self.logger.debug(((json.dumps(parsed, sort_keys=True, indent=4, separators=(',', ': ')))
+                        self.logger.debug()
+                        self.logger.debug(json.dumps(parsed, sort_keys=True, indent=4, separators=(',', ': ')))
                 except Exception as e:
-                    self.logger.debug((("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                    self.logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
-                    self.logger.debug((('Cannot parse response !')
-                    # self.logger.debug((('Response :')
-                    # self.logger.debug(((data)
+                    self.logger.debug('Cannot parse response !')
+                    # self.logger.debug('Response :')
+                    # self.logger.debug(data)
                     if (e != 'Expecting value: line 1 column 1 (char 0)'):
-                        self.logger.debug((("Error : ", e)
+                        self.logger.debug("Error : ", e)
 
 
     # PUT response DIRTY parsing
@@ -546,10 +545,10 @@ class TydomWebSocketClient():
     # Refresh (all)
     async def post_refresh(self):
         if not (self.connection.open):
-            self.logger.debug((('Exiting to ensure systemd restart....')
+            self.logger.debug('Exiting to ensure systemd restart....')
             sys.exit() #Exit all to ensure systemd restart
         else:
-            # self.logger.debug((("Refresh....")
+            # self.logger.debug("Refresh....")
             msg_type = '/refresh/all'
             # req = 'POST'
             await self.send_post_message(self.connection, msg_type)
@@ -596,9 +595,9 @@ class TydomWebSocketClient():
 
     async def get_data(self):
         if not self.connection.open:
-            self.logger.debug((('get_data error !')
+            self.logger.debug('get_data error !')
             # await self.exiting()wait self.exiting()
-            self.logger.debug((('Exiting to ensure systemd restart....')
+            self.logger.debug('Exiting to ensure systemd restart....')
             sys.exit() #Exit all to ensure systemd restart
 
         else:
@@ -618,21 +617,21 @@ class TydomWebSocketClient():
 
     async def notify_alive(self, msg='OK'):
         statestr = msg #+' : '+str(datetime.fromtimestamp(time.time()))
-        self.logger.debug((("Tydom HUB is still connected, systemd's watchdog notified...")
+        self.logger.debug("Tydom HUB is still connected, systemd's watchdog notified...")
 
         # await self.POST_Hassio(sensorname='last_ping', state=statestr, friendlyname='Tydom Connection')
         # except Exception as e:
-        #     self.logger.debug((('Hassio sensor down !'+e)
+        #     self.logger.debug('Hassio sensor down !'+e)
 
     async def exiting(self):
 
-        self.logger.debug((("Exiting to ensure systemd restart....")
+        self.logger.debug("Exiting to ensure systemd restart....")
         statestr = 'Exiting...'+' : '+str(datetime.fromtimestamp(time.time()))
 
         # try:
         #     await self.POST_Hassio(sensorname='last_ping', state=statestr, friendlyname='Tydom connection')
         # except Exception as e:
-        #     self.logger.debug((('Hassio sensor down !'+e)
+        #     self.logger.debug('Hassio sensor down !'+e)
         sys.exit()
 
 class BytesIOSocket:
