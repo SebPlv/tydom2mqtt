@@ -49,7 +49,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-    logging.info("[tydom2mqtt] start")
+    logger = logging.getLogger("TYDOM2MQTT")
+    logger.info("[tydom2mqtt] start")
     """Setup the sensor platform."""
     tydomMAC = config.get(CONF_TYDOM_MAC)
     tydomIP = config.get(CONF_TYDOM_IP)
@@ -66,17 +67,17 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     loop.run_until_complete(tydom.connect())
     # Giving back tydom client to MQTT client
     hassio.tydom = tydom
-    add_devices([Tydom2MQTT(tydom,loop)])
+    add_devices([Tydom2MQTT(tydom,loop,logger)])
 
 
 class Tydom2MQTT(Entity):
     """Representation of a Sensor."""
 
-    def __init__(self, tydom, loop):
+    def __init__(self, tydom, loop,logger):
         """Initialize the sensor."""
-        print('Start websocket listener and heartbeat')
-
+        logger.info('Start websocket listener and heartbeat')
         self._state = None
+        self.logger=logger;
         tasks = [                                                             
           tydom.receiveMessage(),                                             
           tydom.heartbeat()                                                    
@@ -110,4 +111,4 @@ class Tydom2MQTT(Entity):
         """Fetch new state data for the sensor.
         This is the only method that should fetch new data for Home Assistant.
         """
-        logging.debug("[tydom2mqtt] nothing to do") 
+        self.logger.debug("[tydom2mqtt] nothing to do") 
