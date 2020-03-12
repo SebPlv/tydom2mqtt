@@ -138,6 +138,7 @@ class TydomWebSocketClient():
             self.logger.debug(self.host)
             
             self.connection = await websockets.client.connect('wss://{}:443/mediation/client?mac={}&appli=1'.format(self.host, self.mac),
+                    extra_headers=websocketHeaders, ssl=websocket_ssl_context)
             #                                       extra_headers=websocketHeaders, ssl=websocket_ssl_context) as self.connection:A
 
             while 1:
