@@ -30,7 +30,8 @@ logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 # http.client.HTTPConnection.debuglevel = 1
 
 # Dicts
-deviceAlarmKeywords = ['alarmMode','alarmState','alarmSOS','zone1State','zone2State','zone3State','zone4State','zone5State','zone6State','zone7State','zone8State','gsmLevel','inactiveProduct','zone1State','liveCheckRunning','networkDefect','unitAutoProtect','unitBatteryDefect','unackedEvent','alarmTechnical','systAutoProtect','sysBatteryDefect','zsystSupervisionDefect','systOpenIssue','systTechnicalDefect','videoLinkDefect']
+deviceAlarmKeywords = ['alarmMode','alarmState','alarmSOS','zone1State','zone2State','zone3State','zone4State','zone5State','zone6State','zone7State','zone8State','gsmLevel','inactiveProduct','zone1State','liveCheckRunning','networkDefect','unitAutoProtect','unitBatteryDefect','unackedEvent','alarmTechnical','systAutoProtect','sysBatteryDefect','zsystSupervisionDefect','systOpenIssue','systTechnicalDefect','videoLinkDefect', 'outTemperature']
+
 # Device dict for parsing
 device_dict = dict()
 climateKeywords = ['temperature', 'authorization', 'hvacMode', 'setpoint']
@@ -137,13 +138,10 @@ class TydomWebSocketClient():
             self.logger.debug(self.host)
             
             self.connection = await websockets.client.connect('wss://{}:443/mediation/client?mac={}&appli=1'.format(self.host, self.mac),
-                                                    extra_headers=websocketHeaders, ssl=websocket_ssl_context)
+            #                                       extra_headers=websocketHeaders, ssl=websocket_ssl_context) as self.connection:A
 
-            # async with websockets.client.connect('wss://{}:443/mediation/client?mac={}&appli=1'.format(self.host, self.mac),
-            #                             extra_headers=websocketHeaders, ssl=websocket_ssl_context) as self.connection:
-            await self.notify_alive()
-
-            while True:
+            while 1:
+                await self.notify_alive()
                 self.logger.debug('\o/ \o/ \o/ \o/ \o/ \o/ \o/ \o/ \o/ ')
                 self.logger.debug("Tydom Websocket is Connected !", self.connection)
                 return self.connection
@@ -251,7 +249,7 @@ class TydomWebSocketClient():
         '''
             Receiving all server messages and handling them
         '''
-        while True:
+        while 1:
 
             bytes_str = await self.connection.recv()
             # self.logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -273,7 +271,7 @@ class TydomWebSocketClient():
                         self.logger.error(bytes_str)
                         self.logger.error('END RAW')
                         self.logger.error(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-                elif ("PUT /devices/data" in first):
+                elif ("PUT /devices/data" in first) or ("/devices/cdata" in first):
                     self.logger.debug('PUT /devices/data message detected !')
                     try:
                         incoming = self.parse_put_response(bytes_str)
@@ -345,6 +343,11 @@ class TydomWebSocketClient():
             except Exception as e:
                 self.logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 self.logger.debug('receiveMessage error')
+                self.logger.debug('RAW :')
+                self.logger.debug(bytes_str)
+                self.logger.debug("Incoming payload :")
+                self.logger.debug(incoming)
+                self.logger.debug("Error :")
                 self.logger.debug(e)
                 self.logger.debug('Exiting to ensure systemd restart....')
                 sys.exit() #Exit all to ensure systemd restart
@@ -396,7 +399,8 @@ class TydomWebSocketClient():
                             # Get list of shutter
                             if i["last_usage"] == 'shutter':
                                 # self.logger.debug('{} {}'.format(i["id_endpoint"],i["name"]))
-                                device_dict[i["id_endpoint"]] = i["name"]
+                                #device_dict[i["id_endpoint"]] = i["name"]
+                                device_dict[i["id_device"]] = i["name"]
                                 # TODO get other device type
                             if i["last_usage"] == 'alarm':
                                 # self.logger.debug('{} {}'.format(i["id_endpoint"], i["name"]))
@@ -407,60 +411,112 @@ class TydomWebSocketClient():
                         for i in parsed:
                             attr = {}
                             if i["endpoints"][0]["error"] == 0:
-                                for elem in i["endpoints"][0]["data"]:
-                                    # Get full name of this id
-                                    endpoint_id = i["endpoints"][0]["id"]
-                                    # Element name
-                                    elementName = elem["name"]
-                                    # Element value
-                                    elementValue = elem["value"]
-                                    
-                                    # Get last known position (for shutter)
-                                    if elementName == 'position':
-                                        name_of_id = self.get_name_from_id(endpoint_id)
-                                        if len(name_of_id) != 0:
-                                            print_id = name_of_id
-                                        else:
-                                            print_id = endpoint_id
-                                        # self.logger.debug('{} : {}'.format(print_id, elementValue))
-                                        new_cover = "cover_tydom_"+str(endpoint_id)
-                                        new_cover = Cover(id=endpoint_id,name=print_id, current_position=elementValue, attributes=i, mqtt=self.mqtt_client)
-                                        new_cover.update()
+                                try:
+                                    for elem in i["endpoints"][0]["data"]:
+                                        # Get full name of this id
+                                        #endpoint_id = i["endpoints"][0]["id"]
+                                        endpoint_id = i["id"] # thanks @azrod
+                                        # Element name
+                                        elementName = elem["name"]
+                                        # Element value
+                                        elementValue = elem["value"]
+                                        elementValidity = elem["validity"]
+                                        # print(elementName,elementValue,elementValidity)
+                                        # Get last known position (for shutter)
+                                        if elementName == 'position' and elementValidity == 'upToDate':
+                                            name_of_id = self.get_name_from_id(endpoint_id)
+                                            if len(name_of_id) != 0:
+                                                print_id = name_of_id
+                                            else:
+                                                print_id = endpoint_id
+                                            # print('{} : {}'.format(print_id, elementValue))
+                                            new_cover = "cover_tydom_"+str(endpoint_id)
+                                            new_cover = Cover(id=endpoint_id,name=print_id, current_position=elementValue, attributes=i, mqtt=self.mqtt_client)
+                                            new_cover.update()
 
-                                    # Get last known state (for alarm)
-                                    if elementName in deviceAlarmKeywords:
-                                        alarm_data = '{} : {}'.format(elementName, elementValue)
-                                        # self.logger.debug(alarm_data)
-                                        # alarmMode  : ON or ZONE or OFF
-                                        # alarmState : ON = Triggered
-                                        # alarmSOS   : true = SOS triggered
-                                        state = None
-                                        sos_state = False
-                                        
-                                        if alarm_data == "alarmMode : ON":
+                                        # Get last known state (for alarm) # NEW METHOD
+                                        if elementName in deviceAlarmKeywords and elementValidity == 'upToDate':
+                                            attr[elementName] = elementValue
+                                except Exception as e:
+                                    print('msg_data error in parsing !')
+                                    print(e)
+                                # Get last known state (for alarm) # NEW METHOD
+                                if attr != {}:
+                                    # print(attr)
+                                    state = None
+                                    sos_state = False
+                                    out = None
+
+                                    try:
+                                        if 'alarmState' in attr and attr['alarmState'] == "ON":
+                                            state = "triggered"
+                                        if 'alarmSOS' in attr and attr['alarmSOS'] == "true":
+                                            state = "triggered"
+                                            sos_state = True                                                                               
+                                        elif 'alarmMode' in attr and attr ["alarmMode"]  == "ON":
                                             state = "armed_away"
-                                        elif alarm_data == "alarmMode : ZONE":
+                                        elif 'alarmMode' in attr and attr["alarmMode"]  == "ZONE":
                                             state = "armed_home"
-                                        elif alarm_data == "alarmMode : OFF":
+                                        elif 'alarmMode' in attr and attr["alarmMode"]  == "OFF":
                                             state = "disarmed"
-                                        elif alarm_data == "alarmState : ON":
-                                            state = "triggered"
-                                        elif alarm_data == "alarmSOS : true":
-                                            state = "triggered"
-                                            sos_state = True
-                                        else:
-                                            attr[elementName] = [elementValue]
-                                        #     attr[alarm_data]
-                                            # self.logger.debug(attr)
-                                        #device_dict[i["id_endpoint"]] = i["name"]
+
+                                        if 'outTemperature' in attr:
+                                            out = attr["outTemperature"]
+
                                         if (sos_state == True):
-                                            self.logger.debug("SOS !")
+                                            print("SOS !")
+
                                         if not (state == None):
-                                            # self.logger.debug(state)
+                                            # print(state)
                                             alarm = "alarm_tydom_"+str(endpoint_id)
-                                            # self.logger.debug("Alarm created / updated : "+alarm)
-                                            alarm = Alarm(id=endpoint_id,name="Tyxal Alarm", current_state=state, attributes=attr, sos=str(sos_state), mqtt=self.mqtt_client)
+                                            # print("Alarm created / updated : "+alarm)
+                                            alarm = Alarm(id=endpoint_id,name="Tyxal Alarm", current_state=state, out_temp=out, attributes=attr, sos=str(sos_state), mqtt=self.mqtt_client)
                                             alarm.update()
+
+                                    except Exception as e:
+                                        print("Error in alarm parsing !")
+                                        print(e)
+                                        pass
+                                    # Get last known state (for alarm) # OLD Method, probably compatible if you have multiple alarms
+                                    # if elementName in deviceAlarmKeywords:
+                                    #     # print(i["endpoints"][0]["data"])
+                                    #     alarm_data = '{} : {}'.format(elementName, elementValue)
+                                    #     # print(alarm_data)
+                                    #     # alarmMode  : ON or ZONE or OFF
+                                    #     # alarmState : ON = Triggered
+                                    #     # alarmSOS   : true = SOS triggered
+                                    #     state = None
+                                    #     sos_state = False
+                                    #     out = None
+
+                                    #     if alarm_data == "alarmState : ON":
+                                    #         state = "triggered"
+                                    #     if alarm_data == "alarmSOS : true":
+                                    #         state = "triggered"
+                                    #         sos_state = True
+                                    #     if alarm_data == "alarmMode : ON":
+                                    #         state = "armed_away"
+                                    #     if alarm_data == "alarmMode : ZONE":
+                                    #         state = "armed_home"
+                                    #     if alarm_data == "alarmMode : OFF":
+                                    #         state = "disarmed"
+
+                                    #     if elementName == "outTemperature":
+                                    #         out = elementValue
+                                    #     else:
+                                    #         attr[elementName] = [elementValue]
+                                    #     #     attr[alarm_data]
+                                    #         # print(attr)
+                                    #     #device_dict[i["id_endpoint"]] = i["name"]
+                                    #     if (sos_state == True):
+                                    #         print("SOS !")
+                                    #     if not (state == None):
+                                    #         # print(state)
+                                    #         alarm = "alarm_tydom_"+str(endpoint_id)
+                                    #         # print("Alarm created / updated : "+alarm)
+                                    #         alarm = Alarm(id=endpoint_id,name="Tyxal Alarm", current_state=state, out_temp=out, attributes=attr, sos=str(sos_state), mqtt=self.mqtt_client)
+                                    #         alarm.update()
+
                     elif (msg_type == 'msg_html'):
                         self.logger.debug("HTML Response ?")
                     elif (msg_type == 'msg_info'):
@@ -477,6 +533,7 @@ class TydomWebSocketClient():
                     # self.logger.debug(data)
                     if (e != 'Expecting value: line 1 column 1 (char 0)'):
                         self.logger.debug("Error : ", e)
+                        self.logger.debug(parsed)
 
 
     # PUT response DIRTY parsing
