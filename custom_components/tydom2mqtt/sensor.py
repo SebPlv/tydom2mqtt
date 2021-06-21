@@ -30,6 +30,8 @@ CONF_TYDOM_IP = 'tydomIP'
 CONF_TYDOM_PASSWORD = 'tydomPassword'
 CONF_MQTT_IP = 'mqttIP'
 CONF_MQTT_PORT = 'mqttPort'
+CONF_MQTT_USER = 'mqttUser'
+CONF_MQTT_PASS = 'mqttPwd'
 
 SCAN_INTERVAL = timedelta(seconds=3600)
 
@@ -41,7 +43,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_TYDOM_IP): cv.string,
     vol.Optional(CONF_TYDOM_PASSWORD): cv.string,
     vol.Optional(CONF_MQTT_IP): cv.string,
-    vol.Optional(CONF_MQTT_PORT): cv.port
+    vol.Optional(CONF_MQTT_PORT): cv.port,
+    vol.Optional(CONF_MQTT_USER): cv.string,     
+    vol.Optional(CONF_MQTT_PASS): cv.string
 })
 
 
@@ -57,8 +61,10 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     tydomPassword = config.get(CONF_TYDOM_PASSWORD)
     mqttIP = config.get(CONF_MQTT_IP)
     mqttPort = config.get(CONF_MQTT_PORT)
+    mqttUser = config.get(CONF_MQTT_USER)                          
+    mqttPwd = config.get(CONF_MQTT_PASS)
     # Creating client object
-    hassio = MQTT_Hassio(mqttIP, mqttPort, "", "", False)
+    hassio = MQTT_Hassio(mqttIP, mqttPort, mqttUser, mqttPwd, False)
     # hassio_connection = loop.run_until_complete(hassio.connect())
     # Giving MQTT connection to tydom class for updating
     tydom = TydomWebSocketClient(mac=tydomMAC, host=tydomIP, password=tydomPassword, mqtt_client=hassio)

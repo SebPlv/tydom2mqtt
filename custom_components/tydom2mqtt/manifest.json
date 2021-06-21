@@ -5,5 +5,6 @@
   "documentation": "https://github.com/max5962/tydom2mqtt/blob/master/custom_components/tydom2mqtt/README.md",
   "dependencies": [],
   "codeowners": [],
-  "requirements": ["websockets==8.1", "requests==2.22.0", "gmqtt==0.6.1"] 
+  "requirements": ["websockets==8.1", "requests==2.22.0", "gmqtt==0.6.1"],
+  "version": "0.1.0" 
 }
